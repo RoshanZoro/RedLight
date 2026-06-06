@@ -5,6 +5,7 @@ use native_windows_gui as nwg;
 
 mod autostart;
 mod config;
+mod cursor;
 mod filter;
 mod hotkey;
 
@@ -53,6 +54,11 @@ impl App {
 fn main() {
     install_crash_logger();
     nwg::init().expect("Failed to init native-windows-gui");
+
+    // Heal a red cursor left behind by a previous hard kill (e.g. Task
+    // Manager's "End task" force-terminates the process, so no cleanup could
+    // run). If we're about to turn the filter on, set_filter re-tints anyway.
+    cursor::restore();
 
     let mut cfg = Config::load();
     cfg.start_on_boot = autostart::is_enabled();
@@ -206,6 +212,8 @@ fn main() {
 /// Write any panic to a crash log (release has no console).
 fn install_crash_logger() {
     std::panic::set_hook(Box::new(|info| {
+        // Don't leave the screen tinted red if we're crashing.
+        cursor::restore();
         if let Some(dir) = dirs::config_dir() {
             let path = dir.join("RedLight");
             let _ = std::fs::create_dir_all(&path);

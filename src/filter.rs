@@ -67,6 +67,9 @@ impl RedFilter {
         let ok = unsafe { MagSetFullscreenColorEffect(&effect).as_bool() };
         if ok {
             self.active = on;
+            // The Magnification color effect skips the hardware mouse cursor,
+            // so tint the system cursors red to match (and restore them off).
+            crate::cursor::set_red(on);
         } else {
             eprintln!("warning: MagSetFullscreenColorEffect failed");
         }
